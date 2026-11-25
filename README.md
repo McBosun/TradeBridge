@@ -1,12 +1,13 @@
 # TradeBridge
 
-A mobile-first B2B trade and logistics platform: marketplace, bulk orders, shipment tracking, quote requests, seller photo uploads and an admin console.
+Installable web app (PWA): B2B marketplace, bulk orders, shipment tracking, quote requests, seller photo uploads and an admin console. Backend: Render + Neon + Cloudflare R2.
 
-The website is a single `index.html` hosted on GitHub Pages. It talks to a separate backend (Render + Neon Postgres + Cloudflare R2) for accounts, listings, photos, orders and shipments.
+## Files (all in the repo root, no folders needed)
+`index.html`, `manifest.json`, `sw.js`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `README.md`
 
-## Deploy
-Push `index.html` to the root of the `main` branch and enable **Settings → Pages**.
+## Install on iPhone
+Open the site in **Safari**, tap **Share**, then **Add to Home Screen**.
 
 ## Notes
-- Payments and escrow are not connected yet: orders carry a status only, no money moves.
+- Payments and escrow are not connected yet: orders carry a status only.
 - Shipping prices are estimates, not live carrier quotes.
