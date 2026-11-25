@@ -70,13 +70,14 @@ nav button{font-size:11px}
 .pc .two{gap:4px}.pc .two button{padding:7px 4px;font-size:12px;margin-top:6px}
 #q{border:2px solid var(--pri);border-radius:99px;padding:11px 16px}
 @media(min-width:560px){.grid{grid-template-columns:repeat(3,1fr)}}
+#ts{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:14px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:90%;text-align:center}#ts.show{opacity:1}
 </style></head><body>
 <header><button class="hb" id="mb" aria-label="Menu">☰</button><h1 style="flex:1;display:flex;align-items:center;gap:8px"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlRyYWRlQnJpZGdlIGxvZ28iPgoKCjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2Utd2lkdGg9IjE0Ij4KPGNpcmNsZSBjeD0iMjU2IiBjeT0iMTY4IiByPSI1MiIvPjxlbGxpcHNlIGN4PSIyNTYiIGN5PSIxNjgiIHJ4PSIyMCIgcnk9IjUyIi8+PHBhdGggZD0iTTIwNCAxNjhoMTA0Ii8+CjxwYXRoIGQ9Ik05NiAzODBRMjU2IDE4MCA0MTYgMzgwIiBzdHJva2Utd2lkdGg9IjIyIi8+CjxwYXRoIGQ9Ik0xNzYgMzA1VjM4ME0yNTYgMjgwVjM4ME0zMzYgMzA1VjM4MCIgc3Ryb2tlLXdpZHRoPSIxMiIvPjwvZz4KPHJlY3QgeD0iNzYiIHk9IjM4MCIgd2lkdGg9IjM2MCIgaGVpZ2h0PSIyMiIgcng9IjExIiBmaWxsPSIjZmZmIi8+Cjwvc3ZnPgo=" width="30" height="30" alt="">Trade<span>Bridge</span></h1>
 <select class="s" id="cur" aria-label="Currency"></select></header>
 <main>
 <section id="market">
 <div class="row" style="margin-bottom:8px"><span class="mut">Ship to</span><select id="dest" class="s"></select></div><input id="q" placeholder="Search products, suppliers, HS codes…">
-<div class="hero"><b>Wholesale from factories worldwide</b><div>Bulk prices, verified suppliers, escrow protection and door-to-door shipping.</div></div><div class="tb"><span>🛡️ Escrow protected</span><span>🚚 Ships worldwide</span><span>✓ Verified sellers</span></div><div class="cg" id="cats"></div><div class="fl"><span>⚡ Flash deals</span><span>Ends in <span id="cd">--:--:--</span></span></div>
+<div class="hero"><b>Wholesale from factories worldwide</b><div>Bulk prices, verified suppliers and door-to-door shipping.</div></div><div class="tb"><span>📦 Order tracking</span><span>🚚 Ships worldwide</span><span>✓ Verified sellers</span></div><div class="cg" id="cats"></div>
 <div id="list" class="grid"></div>
 </section>
 <section id="sell" class="hide"><div class="card"><b>Post your goods</b><p class="mut">Add photos and details. Smart Assist fills in the rest.</p>
@@ -104,118 +105,98 @@ nav button{font-size:11px}
 <label>Service</label><select id="sm"><option value="air">Air freight</option><option value="exp">Express courier</option><option value="sea">Sea freight</option></select>
 <div id="sq" class="card" style="margin:12px 0 0"></div></div>
 <div class="card"><b>Track a shipment</b>
-<div class="row" style="margin-top:8px"><input id="tn" value="TB-2026-48213"><button class="chip on" id="tg">Track</button></div>
+<div class="row" style="margin-top:8px"><input id="tn" placeholder="Enter tracking number"><button class="chip on" id="tg">Track</button></div>
 <div id="tr" style="margin-top:12px"></div></div>
 </section>
 <section id="admin" class="hide"><div id="ad"></div></section>
 <section id="orders" class="hide"><div id="ol"></div></section>
 </main>
-<div id="au"></div><div id="ov"></div><aside id="dr"></aside>
+<div id="au"></div><div id="ts"></div><div id="ov"></div><aside id="dr"></aside>
 <nav><button class="on" data-t="market"><b>🛒</b>Market</button><button data-t="sell"><b>📸</b>Sell</button><button data-t="rfq"><b>📝</b>RFQ</button><button data-t="ship"><b>🚚</b>Ship</button><button data-t="orders"><b>📦</b>Orders</button></nav>
-<script>const $=id=>document.getElementById(id);
+<script>const API="https://tradebridge-api-4z0v.onrender.com";
+const $=id=>document.getElementById(id),esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const FX={USD:[1,"$"],NGN:[1550,"₦"],EUR:[.92,"€"],GBP:[.79,"£"],CNY:[7.2,"¥"],AED:[3.67,"AED "],KES:[129,"KSh "]};
 const CT={Nigeria:[0,"🇳🇬"],China:[1,"🇨🇳"],USA:[2,"🇺🇸"],Germany:[3,"🇩🇪"],UAE:[4,"🇦🇪"],Kenya:[5,"🇰🇪"],UK:[6,"🇬🇧"],India:[7,"🇮🇳"]};
 const DIST={Nigeria:[0,6,5.5,5.2,4,3.5,5.2,6.5],China:[6,0,11,8.5,5.8,8,8.5,3.5],USA:[5.5,11,0,7,11,12,6,13],Germany:[5.2,8.5,7,0,5,6.5,.9,6.5],UAE:[4,5.8,11,5,0,3,5.5,2.2],Kenya:[3.5,8,12,6.5,3,0,7,4.5],UK:[5.2,8.5,6,.9,5.5,7,0,7],India:[6.5,3.5,13,6.5,2.2,4.5,7,0]};
-const P=[
-{e:"☀️",n:"5kW Solar Hybrid Inverter",s:"SunGrid Ltd",c:"China",cat:"Energy",moq:50,t:[[50,310],[200,285],[1000,262]],r:4.8},
-{e:"🧴",n:"Cold-Pressed Shea Butter (bulk)",s:"Tamale Naturals",c:"Nigeria",cat:"Agro",moq:200,t:[[200,4.2],[1000,3.7],[5000,3.2]],r:4.7},
-{e:"🎞️",n:"Industrial Packaging Film Roll",s:"Rhein Pack GmbH",c:"Germany",cat:"Industrial",moq:100,t:[[100,38],[500,33],[2000,29]],r:4.6},
-{e:"📱",n:"Smartphone Accessories Kit",s:"Gulf Tech Trading",c:"UAE",cat:"Electronics",moq:300,t:[[300,2.9],[2000,2.4],[10000,2]],r:4.5},
-{e:"🥜",n:"Raw Cashew Nuts (W320)",s:"Mombasa Agro Co.",c:"Kenya",cat:"Agro",moq:1000,t:[[1000,1.6],[5000,1.45],[20000,1.3]],r:4.9},
-{e:"🧵",n:"Cotton Fabric, 40s Combed",s:"Surat Textiles",c:"India",cat:"Textile",moq:500,t:[[500,2.1],[3000,1.85],[10000,1.65]],r:4.4},
-{e:"👟",n:"Men's Running Sneakers",s:"Guangzhou Sports",c:"China",cat:"Fashion",moq:60,t:[[60,9.5],[300,8.4],[1000,7.2]],r:4.6},
-{e:"👗",n:"Women's Summer Dress Set",s:"Jaipur Prints",c:"India",cat:"Fashion",moq:100,t:[[100,6.8],[500,5.9],[2000,5.1]],r:4.5},
-{e:"💡",n:"LED Smart Bulb 12W",s:"Shenzhen Lumen",c:"China",cat:"Home",moq:200,t:[[200,1.4],[1000,1.15],[5000,.95]],r:4.7},
-{e:"💄",n:"Natural Lip Gloss Set",s:"Berlin Beauty Lab",c:"Germany",cat:"Beauty",moq:150,t:[[150,2.6],[800,2.2],[3000,1.9]],r:4.6},
-{e:"⚙️",n:"CNC Mini Lathe Machine",s:"Hamburg Machinery",c:"Germany",cat:"Machinery",moq:2,t:[[2,1250],[10,1120],[50,990]],r:4.8},
-{e:"🎒",n:"Waterproof School Backpack",s:"Mumbai Bags",c:"India",cat:"Fashion",moq:120,t:[[120,4.1],[600,3.6],[2500,3.1]],r:4.4},
-{e:"🍫",n:"Premium Cocoa Powder 25kg",s:"Ibadan Cocoa Co.",c:"Nigeria",cat:"Agro",moq:40,t:[[40,95],[200,88],[800,80]],r:4.7},
-{e:"🔌",n:"Fast Charging Cable 1m",s:"Dubai Gadgets",c:"UAE",cat:"Electronics",moq:500,t:[[500,.6],[3000,.5],[10000,.4]],r:4.5}];
-const cats=["All","Electronics","Fashion","Home","Beauty","Agro","Textile","Energy","Industrial","Machinery"],CI={All:"🔥",Electronics:"📱",Fashion:"👗",Home:"🏠",Beauty:"💄",Agro:"🌾",Textile:"🧵",Energy:"☀️",Industrial:"🏭",Machinery:"⚙️"};let fav=new Set();let cat="All",cur="USD",orders=[
-{e:"🥜",n:"Raw Cashew Nuts (W320)",q:5000,st:2,id:"TB-2026-48213",v:7250}];
-const landed=p=>{const w=p.moq*.5,d=DIST[p.c][CT[$("dest").value][0]];return p.moq*tier(p,p.moq)*1.1+(p.c==$("dest").value?w*.3:60+w*.45*(.4+d/10))};
-const money=u=>{const[f,s]=FX[cur];const v=u*f;return s+(v>=100?Math.round(v).toLocaleString():v.toFixed(2))};
-const tier=(p,q)=>{let x=p.t[0][1];p.t.forEach(a=>{if(q>=a[0])x=a[1]});return x};
-$("cur").innerHTML=Object.keys(FX).map(k=>`<option>${k}</option>`).join("");
-const co=Object.keys(CT).map(k=>`<option>${k}</option>`).join("");
-["rd","sf","st","dest","so"].forEach(i=>$(i).innerHTML=co);$("dest").value="Nigeria";$("sf").value="China";$("st").value="Nigeria";$("rd").value="Nigeria";
-function draw(){
-$("cats").innerHTML=cats.map(c=>`<button data-c="${c}" class="${c==cat?"on":""}"><span>${CI[c]||"📦"}</span>${c}</button>`).join("");
-const q=$("q").value.toLowerCase();
-$("list").innerHTML=P.filter(p=>(cat=="All"||p.cat==cat)&&(p.n+p.s).toLowerCase().includes(q)).map(p=>{const i=P.indexOf(p),sold=[...p.n].reduce((a,c)=>a+c.charCodeAt(0),0)*13%9000+300,f=p.t[0][1],bd=Math.round((1-p.t[p.t.length-1][1]/f)*100);
-return `<div class="pc"><div class="pi">${p.img?`<img src="${p.img}" alt="">`:(p.e||"📦")}<i>Bulk -${bd}%</i></div><div class="pb"><div class="pn">${esc(p.n)}</div><div class="pp"><span class="pr">${money(f)}</span><s>${money(f*1.3)}</s></div><div class="mut">MOQ ${p.moq} · ${sold.toLocaleString()} sold</div><div class="tg"><span>✓ Escrow</span><span>${p.mine?(me&&me.ver?"Verified":"Pending"):"Verified"}</span></div><div class="mut">★ ${p.r} · ${CT[p.c][1]} ${esc(p.s)}</div><div class="mut" style="font-size:11px">Landed at MOQ to ${$("dest").value}: <b>${money(landed(p))}</b></div><div class="two"><button class="p" data-o="${i}">Order</button><button class="p g" data-m="${i}">💬</button><button class="p g" data-f="${i}">${fav.has(i)?"♥":"♡"}</button></div><div id="ch${i}"></div></div></div>`}).join("")||'<p class="mut">No matches. Post an RFQ and suppliers will come to you.</p>'}
-function ship(){const a=$("sf").value,b=$("st").value,w=+$("sw").value||1,m=$("sm").value;
-const d=DIST[a][CT[b][0]];const r={air:[4.2,1.2,3,6],exp:[7.5,2.2,2,4],sea:[.45,.3,20,40]}[m];
-const cost=a==b?w*.3+40:60+w*(r[0]*(.4+d/10))+ w*r[1]*0;const days=a==b?"1-3":`${r[2]+Math.round(d/2)}-${r[3]+Math.round(d)}`;
-$("sq").innerHTML=`<div class="price">${money(cost)}</div><div class="mut">Est. door-to-door · ${days} days</div><div class="mut" style="margin-top:6px">Includes customs docs (HS code, invoice, packing list), duties estimate and insurance option. Indicative demo rates.</div>`}
-function track(){const n=$("tn").value||"TB-2026-48213";const s=["Order confirmed, payment held in escrow","Picked up from supplier warehouse","Departed origin hub","Customs clearance in progress","Out for delivery","Delivered, escrow released"];const k=3;
-$("tr").innerHTML=`<div class="mut">${n}</div><div class="tl" style="margin-top:8px">${s.map((x,i)=>`<div class="${i<=k?"d":""}"><b style="font-weight:${i==k?700:500}">${x}</b></div>`).join("")}</div>`}
-function ord(){const S=["Payment in escrow","Preparing","In transit","Delivered"];
-$("ol").innerHTML=orders.map(o=>`<div class="card"><div class="row"><b>${o.n}</b><span class="badge">${S[o.st]}</span></div><div class="mut">${o.q.toLocaleString()} units · ${money(o.v)} · ${o.id}</div><div class="bar"><i style="width:${(o.st+1)*25}%"></i></div><div class="mut">Funds released to supplier only after you confirm delivery.</div></div>`).join("")}
-document.addEventListener("click",e=>{const t=e.target.closest("[data-t]");if(t){go(t.dataset.t);return}
-if(e.target.dataset.c){cat=e.target.dataset.c;draw()}
-if(e.target.dataset.o){const p=P[e.target.dataset.o];const id="TB-2026-"+Math.floor(10000+Math.random()*89999);orders.unshift({n:p.n,q:p.moq,st:0,id,v:p.moq*tier(p,p.moq),b:me.n});S.unshift({id,route:p.c+" → "+$("dest").value,car:"SwiftAir Cargo",st:0,eta:"~"+(7+Math.floor(Math.random()*14))+" days",dl:0});e.target.textContent="Order placed, see Orders tab ✓"}
-if(e.target.id=="tg")track()});
-$("q").oninput=draw;$("cur").onchange=e=>{cur=e.target.value;draw();ship();ord()};
-["sf","st","sw","sm"].forEach(i=>$(i).oninput=ship);
-$("rs").onclick=()=>{const n=3+Math.floor(Math.random()*6);$("rres").innerHTML=`<div class="card"><b>RFQ sent ✓</b><p class="mut">${n} verified suppliers across ${Math.min(n,4)} countries are reviewing "${$("rp").value||"your request"}". Quotes arrive here with landed cost (price + shipping + duties) so you compare real totals.</p></div>`};
-$("dest").onchange=draw;let imgs=[];
-$("pb").onclick=()=>$("ph").click();
-$("ph").onchange=e=>{imgs=[...e.target.files].slice(0,4).map(f=>URL.createObjectURL(f));$("pv").innerHTML=imgs.map(u=>`<img src="${u}" alt="">`).join("");assist()};
-const KB=[["solar","Energy","8504.40"],["shea","Agro","1515.90"],["cashew","Agro","0801.31"],["cocoa","Agro","1801.00"],["cotton","Textile","5208.xx"],["fabric","Textile","5407.xx"],["phone","Electronics","8517.62"],["charger","Electronics","8504.40"],["film","Industrial","3920.xx"],["pack","Industrial","3923.xx"]];
-function assist(){const n=($("sn").value+" "+$("sd").value).toLowerCase(),p=+$("sp").value,m=+$("sm2").value;const k=KB.find(a=>n.includes(a[0]));
-const pool=P.filter(x=>k&&x.cat==k[1]&&!x.mine);const avg=pool.length?pool.reduce((a,x)=>a+x.t[0][1],0)/pool.length:0;
-let sc=Math.min(30,imgs.length*10)+($("sn").value.length>12?15:5)+($("sd").value.length>30?20:0)+(p>0?15:0)+(m>0?10:0)+(k?10:0);sc=Math.min(100,sc);
-const tips=[imgs.length<3&&"add 3+ photos",$("sd").value.length<=30&&"describe grade and packaging",!k&&"use a clearer product name"].filter(Boolean);
-$("aib").innerHTML=`<b>✨ Smart Assist</b><br>Category: <b>${k?k[1]:"not detected yet"}</b> · HS code: <b>${k?k[2]:"-"}</b><br>${avg?`Similar listings start around ${money(avg*.8)} to ${money(avg*1.2)} per unit.`+(p&&(p<avg*.7||p>avg*1.4)?" Your price looks off-market.":""):"Price range appears once a category is detected."}<br>Listing score: <b>${sc}/100</b>${tips.length?"<br>Tip: "+tips.join("; "):""}`}
-["sn","sd","sp","sm2"].forEach(i=>$(i).oninput=assist);
-$("sub").onclick=()=>{const n=$("sn").value.trim();if(!n){$("sn").focus();return}const k=KB.find(a=>n.toLowerCase().includes(a[0])),p=+$("sp").value||1,m=+$("sm2").value||1;
-P.unshift({n,s:"You (your store)",c:$("so").value,cat:k?k[1]:"Industrial",moq:m,t:[[m,p],[m*5,+(p*.92).toFixed(2)],[m*20,+(p*.85).toFixed(2)]],r:"New",img:imgs[0],mine:true,e:"📦"});
-imgs=[];$("pv").innerHTML="";$("sn").value="";$("sd").value="";assist();document.querySelector('[data-t=market]').click()};
-document.addEventListener("click",e=>{const d=e.target.dataset;if(d.f!==undefined){fav.has(+d.f)?fav.delete(+d.f):fav.add(+d.f);draw()}
-if(d.m!==undefined){const b=$("ch"+d.m),p=P[d.m];b.innerHTML=`<div class="msg">You: Hello, can you do ${p.moq*2} units delivered to ${$("dest").value}?</div>`;
-setTimeout(()=>b.innerHTML+=`<div class="msg">${p.s}: Yes. At ${p.moq*2} units the price is ${money(tier(p,p.moq*2))}/unit. Samples ship in 3 days. 🔔 Auto-translated to English.</div>`,900)}});
-let me=null,mode="in",at="ov";
-const U=[{n:"Admin",e:"admin@tradebridge.com",pw:"admin123",role:"admin",c:"Nigeria",st:"Active",ver:1},
-{n:"Lagos Retail Hub",e:"buyer@demo.com",pw:"demo123",role:"buyer",c:"Nigeria",st:"Active",ver:1,o:12},
-{n:"Nairobi Wholesale",e:"nbo@demo.com",pw:"demo123",role:"buyer",c:"Kenya",st:"Active",ver:1,o:7},
-{n:"Dubai Importers",e:"dxb@demo.com",pw:"demo123",role:"buyer",c:"UAE",st:"Active",ver:1,o:3},
-{n:"SunGrid Ltd",e:"sun@demo.com",pw:"demo123",role:"seller",c:"China",st:"Active",ver:1,l:14},
-{n:"Tamale Naturals",e:"tam@demo.com",pw:"demo123",role:"seller",c:"Nigeria",st:"Active",ver:1,l:9},
-{n:"Surat Textiles",e:"sur@demo.com",pw:"demo123",role:"seller",c:"India",st:"Active",ver:0,l:3},
-{n:"SwiftAir Cargo",e:"swift@demo.com",pw:"demo123",role:"logistics",c:"UAE",st:"Active",ver:1,r:"96%"},
-{n:"OceanLink Freight",e:"ocean@demo.com",pw:"demo123",role:"logistics",c:"China",st:"Active",ver:1,r:"91%"}];
+const cats=["All","Electronics","Fashion","Home","Beauty","Agro","Textile","Energy","Industrial","Machinery"],CI={All:"🔥",Electronics:"📱",Fashion:"👗",Home:"🏠",Beauty:"💄",Agro:"🌾",Textile:"🧵",Energy:"☀️",Industrial:"🏭",Machinery:"⚙️"};
+const KB=[["solar","Energy","8504.40"],["inverter","Energy","8504.40"],["shea","Agro","1515.90"],["cashew","Agro","0801.31"],["cocoa","Agro","1801.00"],["cotton","Textile","5208.xx"],["fabric","Textile","5407.xx"],["phone","Electronics","8517.62"],["charger","Electronics","8504.40"],["cable","Electronics","8544.42"],["shoe","Fashion","6403.xx"],["dress","Fashion","6204.xx"],["bulb","Home","8539.50"],["lip","Beauty","3304.10"],["lathe","Machinery","8458.xx"],["film","Industrial","3920.xx"],["pack","Industrial","3923.xx"]];
 const SN=["Booked","Picked up","In transit","Customs","Out for delivery","Delivered"];
-const S=[{id:"TB-2026-48213",route:"Kenya → Nigeria",car:"SwiftAir Cargo",st:3,eta:"Dec 2",dl:0},{id:"TB-2026-47110",route:"China → Nigeria",car:"OceanLink Freight",st:2,eta:"Dec 19",dl:1},{id:"TB-2026-46002",route:"India → UAE",car:"SwiftAir Cargo",st:1,eta:"Dec 6",dl:0}];
-const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const OS={escrow:"Order placed",preparing:"Preparing",in_transit:"In transit",delivered:"Delivered",cancelled:"Cancelled",disputed:"Disputed"},OP={escrow:20,preparing:45,in_transit:75,delivered:100,cancelled:0,disputed:50};
+let tok=null,me=null,P=[],orders=[],fav=new Set(),cat="All",cur="USD",mode="in",at="ov",imgs=[],LO=[];
+try{tok=localStorage.getItem("tb_t")}catch{}
+const co=Object.keys(CT).map(k=>`<option>${k}</option>`).join("");
+const money=u=>{const[f,s]=FX[cur],v=u*f;return s+(v>=100?Math.round(v).toLocaleString():v.toFixed(2))};
+const tier=(p,q)=>p.t.reduce((a,t)=>q>=t[0]?t[1]:a,p.t[0][1]);
+const landed=p=>{const w=p.moq*.5,d=(DIST[p.c]||DIST.Nigeria)[CT[$("dest").value][0]];return p.moq*tier(p,p.moq)*1.1+(p.c==$("dest").value?w*.3:60+w*.45*(.4+d/10))};
+function toast(m){const t=$("ts");t.textContent=m;t.classList.add("show");clearTimeout(toast.i);toast.i=setTimeout(()=>t.classList.remove("show"),4000)}
+async function api(p,o={}){const h={"Content-Type":"application/json"};if(tok)h.Authorization="Bearer "+tok;let r;
+try{r=await fetch(API+p,{method:o.method||"GET",headers:h,body:o.body?JSON.stringify(o.body):undefined})}catch{throw new Error("Cannot reach the server. It may be waking up, try again in a minute.")}
+const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Request failed ("+r.status+")");return j}
+["rd","sf","st","dest","so"].forEach(i=>$(i).innerHTML=co);$("cur").innerHTML=Object.keys(FX).map(k=>`<option>${k}</option>`).join("");
+$("dest").value="Nigeria";$("sf").value="China";$("st").value="Nigeria";$("rd").value="Nigeria";$("so").value="Nigeria";
+const mapL=l=>({id:l.id,n:l.title,s:l.seller_name,c:l.origin_country,cat:l.category,moq:l.moq,t:l.price_tiers.map(x=>[x.min,+x.price]),img:(l.photos||[])[0],ver:l.seller_verified,e:CI[l.category]&&l.category!="All"?CI[l.category]:"📦"});
+async function load(){try{P=(await api("/listings?limit=60")).map(mapL)}catch(e){P=[];toast(e.message)}try{fav=new Set((await api("/favorites")).map(x=>x.id))}catch{}draw()}
 function authUI(){const i=mode=="in";$("au").innerHTML=`<div class="in"><div class="brand"><h1 style="color:#fff;font-size:24px;display:flex;align-items:center;gap:10px"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IlRyYWRlQnJpZGdlIGxvZ28iPgoKCjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2Utd2lkdGg9IjE0Ij4KPGNpcmNsZSBjeD0iMjU2IiBjeT0iMTY4IiByPSI1MiIvPjxlbGxpcHNlIGN4PSIyNTYiIGN5PSIxNjgiIHJ4PSIyMCIgcnk9IjUyIi8+PHBhdGggZD0iTTIwNCAxNjhoMTA0Ii8+CjxwYXRoIGQ9Ik05NiAzODBRMjU2IDE4MCA0MTYgMzgwIiBzdHJva2Utd2lkdGg9IjIyIi8+CjxwYXRoIGQ9Ik0xNzYgMzA1VjM4ME0yNTYgMjgwVjM4ME0zMzYgMzA1VjM4MCIgc3Ryb2tlLXdpZHRoPSIxMiIvPjwvZz4KPHJlY3QgeD0iNzYiIHk9IjM4MCIgd2lkdGg9IjM2MCIgaGVpZ2h0PSIyMiIgcng9IjExIiBmaWxsPSIjZmZmIi8+Cjwvc3ZnPgo=" width="44" height="44" alt="">Trade<span style="color:#fff">Bridge</span></h1><div>Buy, sell and ship across the world market.</div></div><div class="card"><div class="chips" style="margin-top:0"><button class="chip ${i?"on":""}" data-mode="in">Log in</button><button class="chip ${i?"":"on"}" data-mode="up">Sign up</button></div>
-${i?"":`<label>Business name</label><input id="an" autocomplete="organization">`}<label>Email</label><input id="ae" type="email" autocomplete="email"><label>Password</label><input id="ap" type="password" autocomplete="${i?"current-password":"new-password"}">
-${i?"":`<label>I am a</label><select id="ar"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="logistics">Logistics partner</option></select><label>Country</label><select id="ac">${co}</select>`}
-<button class="p" id="ago">${i?"Log in":"Create account"}</button><div class="err" id="am"></div></div>
-<p class="mut">Demo: admin@tradebridge.com / admin123 · buyer@demo.com / demo123 · sun@demo.com / demo123. Accounts live in this page only until you reload.</p></div>`}
-function menu(){$("dr").innerHTML=`<div class="dh"><b>${esc(me.n)}</b><div style="opacity:.9;font-size:13px">${me.role} · ${me.c}</div></div>`+[["market","🛒 Marketplace"],["sell","📸 Sell goods"],["rfq","📝 Request quote"],["ship","🚚 Shipping and tracking"],["orders","📦 My orders"]].concat(me.role=="admin"?[["admin","🛡️ Admin console"]]:[]).map(x=>`<button data-t="${x[0]}">${x[1]}</button>`).join("")+`<button id="lo2">↩ Log out</button>`}
-function go(n){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t==n));["market","sell","rfq","ship","orders","admin"].forEach(x=>$(x).classList.toggle("hide",x!=n));$("dr").classList.remove("open");$("ov").classList.remove("open");ord();if(n=="admin")adm();scrollTo(0,0)}
-function enter(u){me=u;$("au").classList.add("hide");menu();draw();go(u.role=="admin"?"admin":"market")}
-function adm(){const L=r=>U.filter(u=>u.role==r),sel=L("seller"),gmv=orders.reduce((a,o)=>a+o.v,0)+184000,hold=orders.filter(o=>o.st<3).reduce((a,o)=>a+o.v,0);
-const tb=[["ov","Overview"],["bu","Buyers"],["se","Sellers"],["lo","Logistics"]];
-let h=`<div class="chips">${tb.map(t=>`<button class="chip ${t[0]==at?"on":""}" data-at="${t[0]}">${t[1]}</button>`).join("")}</div>`;
-const ub=(u,x)=>`<div class="card"><div class="row"><b>${esc(u.n)}</b><span class="badge" style="${u.st=="Active"?"":"color:var(--warn);border-color:var(--warn)"}">${u.st}</span></div><div class="mut">${esc(u.e)} · ${u.c}</div>${x}<button class="chip sm" data-a="sus" data-i="${U.indexOf(u)}">${u.st=="Active"?"Suspend":"Reactivate"}</button></div>`;
-if(at=="ov"){const pend=sel.filter(u=>!u.ver),dl=S.filter(s=>s.dl);h+=`<div class="kp">${[["Users",U.length],["GMV",money(gmv)],["Escrow held",money(hold)],["Live shipments",S.filter(s=>s.st<5).length],["Delayed",dl.length],["Sellers to verify",pend.length]].map(k=>`<div class="card"><div class="mut">${k[0]}</div><div class="price">${k[1]}</div></div>`).join("")}</div><div class="card" style="margin-top:10px"><b>Needs attention</b>${pend.map(u=>`<div class="mut">🟠 Verify seller: ${esc(u.n)}</div>`).join("")}${dl.map(s=>`<div class="mut">🔴 Delayed: ${s.id} (${s.route})</div>`).join("")||""}${pend.length+dl.length?"":'<div class="mut">All clear.</div>'}</div>`}
-if(at=="bu")h+=L("buyer").map(u=>ub(u,`<div class="mut">Orders: ${(u.o||0)+orders.filter(o=>o.b==u.n).length}</div>`)).join("");
-if(at=="se")h+=sel.map(u=>ub(u,`<div class="mut">Listings: ${u.l||0} · ${u.ver?"✓ Verified":"⏳ Pending verification"}</div><button class="chip sm on" data-a="ver" data-i="${U.indexOf(u)}">${u.ver?"Revoke verification":"Verify seller"}</button>`)).join("")||'<p class="mut">No sellers.</p>';
-if(at=="lo")h+=L("logistics").map(u=>ub(u,`<div class="mut">On-time rate: ${u.r||"New"}</div>`)).join("")+`<b>Shipments</b>`+S.map((s,i)=>`<div class="card"><div class="row"><b>${s.id}</b><span class="badge" style="${s.dl?"color:var(--warn);border-color:var(--warn)":""}">${s.dl?"Delayed":SN[s.st]}</span></div><div class="mut">${s.route} · ${s.car} · ETA ${s.eta}</div><div class="bar"><i style="width:${(s.st+1)/6*100}%"></i></div><div class="two"><button class="chip sm on" data-a="adv" data-i="${i}">Advance: ${SN[Math.min(5,s.st+1)]}</button><button class="chip sm" data-a="dly" data-i="${i}">${s.dl?"Clear delay":"Flag delay"}</button></div></div>`).join("");
-$("ad").innerHTML=h}
-document.addEventListener("click",e=>{const d=e.target.dataset,id=e.target.id;
-if(d.mode){mode=d.mode;authUI()}
-if(id=="ago"){const em=$("ae").value.trim().toLowerCase(),pw=$("ap").value,er=m=>$("am").textContent=m;
-if(mode=="in"){const u=U.find(x=>x.e==em&&x.pw==pw);if(!u)return er("Wrong email or password.");if(u.st!="Active")return er("This account is suspended. Contact support.");enter(u)}
-else{const n=$("an").value.trim();if(!n||!em.includes("@")||pw.length<6)return er("Enter a business name, a valid email and a password of 6+ characters.");if(U.some(x=>x.e==em))return er("That email is already registered.");
-const r=$("ar").value,u={n,e:em,pw,role:r,c:$("ac").value,st:"Active",ver:r=="buyer"?1:0,o:0,l:0,r:"New"};U.push(u);enter(u)}}
-if(id=="lo2"){me=null;$("dr").classList.remove("open");$("ov").classList.remove("open");mode="in";authUI();$("au").classList.remove("hide")}
-if(id=="mb"){$("dr").classList.add("open");$("ov").classList.add("open")}
-if(id=="ov"){$("dr").classList.remove("open");$("ov").classList.remove("open")}
-if(d.at){at=d.at;adm()}
-if(d.a){const i=+d.i;if(d.a=="sus")U[i].st=U[i].st=="Active"?"Suspended":"Active";if(d.a=="ver")U[i].ver=U[i].ver?0:1;if(d.a=="adv"&&S[i].st<5)S[i].st++;if(d.a=="dly")S[i].dl=S[i].dl?0:1;adm()}});
-authUI();draw();ship();track();ord();assist();
-setInterval(()=>{const n=new Date(),e=new Date(n);e.setHours(23,59,59,999);const t=Math.floor((e-n)/1000),f=x=>String(x).padStart(2,"0");$("cd").textContent=f(t/3600|0)+":"+f(t%3600/60|0)+":"+f(t%60)},1000);
+${i?"":`<label>Business name</label><input id="an" autocomplete="organization">`}<label>Email</label><input id="ae" type="email" autocomplete="email"><label>Password</label><input id="ap" type="password" autocomplete="${i?"current-password":"new-password"}" placeholder="${i?"":"At least 8 characters"}">
+${i?"":`<label>I am a</label><select id="ar"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="logistics">Logistics partner</option></select><label>Country</label><select id="ac">${co}</select><p class="mut">Sellers and logistics partners are reviewed by an admin before they are verified.</p>`}
+<button class="p" id="ago">${i?"Log in":"Create account"}</button><div class="err" id="am"></div></div></div>`}
+function menu(){$("dr").innerHTML=`<div class="dh"><b>${esc(me.name)}</b><div style="opacity:.9;font-size:13px">${me.role} · ${esc(me.country||"")}</div></div>`+[["market","🛒 Marketplace"],["sell","📸 Sell goods"],["rfq","📝 Request quote"],["ship","🚚 Shipping and tracking"],["orders","📦 "+(me.role=="logistics"?"My shipments":"My orders")]].concat(me.role=="admin"?[["admin","🛡️ Admin console"]]:[]).map(x=>`<button data-t="${x[0]}">${x[1]}</button>`).join("")+`<button id="lo2">↩ Log out</button>`}
+function go(n){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t==n));["market","sell","rfq","ship","orders","admin"].forEach(x=>$(x).classList.toggle("hide",x!=n));$("dr").classList.remove("open");$("ov").classList.remove("open");if(n=="orders")ord();if(n=="admin")adm();scrollTo(0,0)}
+async function enter(u){me=u;$("au").classList.add("hide");menu();await load();go(u.role=="admin"?"admin":"market")}
+async function doAuth(){const b=$("ago"),em=$("ae").value.trim(),pw=$("ap").value;b.disabled=true;$("am").style.color="var(--mut)";$("am").textContent="Connecting... the first request can take up to a minute.";
+try{const body=mode=="in"?{email:em,password:pw}:{name:$("an").value.trim(),email:em,password:pw,role:$("ar").value,country:$("ac").value};
+const r=await api(mode=="in"?"/auth/login":"/auth/signup",{method:"POST",body});tok=r.token;try{localStorage.setItem("tb_t",tok)}catch{}await enter(r.user)}
+catch(e){$("am").style.color="";$("am").textContent=e.message}finally{b.disabled=false}}
+function logout(){tok=null;me=null;try{localStorage.removeItem("tb_t")}catch{}$("dr").classList.remove("open");$("ov").classList.remove("open");mode="in";authUI();$("au").classList.remove("hide")}
+function draw(){$("cats").innerHTML=cats.map(c=>`<button data-c="${c}" class="${c==cat?"on":""}"><span>${CI[c]}</span>${c}</button>`).join("");const q=$("q").value.toLowerCase();
+$("list").innerHTML=P.filter(p=>(cat=="All"||p.cat==cat)&&(p.n+p.s).toLowerCase().includes(q)).map(p=>{const f=p.t[0][1],bd=Math.round((1-p.t[p.t.length-1][1]/f)*100);
+return `<div class="pc"><div class="pi">${p.img?`<img src="${esc(p.img)}" alt="">`:p.e}${bd>0?`<i>Bulk -${bd}%</i>`:""}</div><div class="pb"><div class="pn">${esc(p.n)}</div><div class="pp"><span class="pr">${money(f)}</span></div><div class="mut">MOQ ${p.moq}</div><div class="tg">${p.ver?"<span>✓ Verified</span>":"<span>New seller</span>"}</div><div class="mut">${CT[p.c]?CT[p.c][1]:""} ${esc(p.s)}</div><div class="mut" style="font-size:11px">Landed at MOQ to ${esc($("dest").value)}: <b>${money(landed(p))}</b></div><div class="two"><button class="p" data-o="${p.id}">Order</button><button class="p g" data-m="${p.id}">💬</button><button class="p g" data-f="${p.id}">${fav.has(p.id)?"♥":"♡"}</button></div><div id="ch${p.id}"></div></div></div>`}).join("")||'<p class="mut" style="grid-column:1/-1">No listings yet. Sellers can post goods from the Sell tab.</p>'}
+async function chat(id){const b=$("ch"+id);if(b.innerHTML){b.innerHTML="";return}let m=[];try{m=await api("/messages?listingId="+id)}catch{}
+b.innerHTML=m.map(x=>`<div class="msg">${x.sender_id==me.id?"You":"Seller"}: ${esc(x.body)}</div>`).join("")+`<input id="mi${id}" placeholder="Message the seller" style="margin-top:6px"><button class="p sm" data-s="${id}">Send</button>`}
+function ship(){const a=$("sf").value,b=$("st").value,w=+$("sw").value||1,m=$("sm").value,d=DIST[a][CT[b][0]],r={air:[4.2,3,6],exp:[7.5,2,4],sea:[.45,20,40]}[m];
+const c=a==b?w*.3+40:60+w*r[0]*(.4+d/10),days=a==b?"1-3":`${r[1]+Math.round(d/2)}-${r[2]+Math.round(d)}`;
+$("sq").innerHTML=`<div class="price">${money(c)}</div><div class="mut">Estimate · ${days} days door to door</div><div class="mut" style="margin-top:6px">Indicative estimate only. Real carrier quotes are not connected yet.</div>`}
+async function track(){const n=$("tn").value.trim();if(!n)return;try{const s=await api("/track/"+encodeURIComponent(n));
+$("tr").innerHTML=`<div class="mut">${esc(s.tracking_ref)} · ${esc(s.route)}${s.delayed?" · ⚠️ Delayed":""}</div><div class="tl" style="margin-top:8px">${SN.map((x,i)=>`<div class="${i<=s.status?"d":""}"><b style="font-weight:${i==s.status?700:500}">${x}</b></div>`).join("")}</div>`}catch(e){$("tr").innerHTML=`<p class="mut">${esc(e.message)}</p>`}}
+const shipCards=(S,adm)=>S.map(s=>`<div class="card"><div class="row"><b>${esc(s.tracking_ref)}</b><span class="badge" style="${s.delayed?"color:var(--warn);border-color:var(--warn)":""}">${s.delayed?"Delayed":SN[s.status]}</span></div><div class="mut">${esc(s.route)} · ${esc(s.carrier_name||"Unassigned")}${s.eta?" · ETA "+esc(s.eta):""}</div><div class="bar"><i style="width:${(s.status+1)/6*100}%"></i></div>${adm?`<select data-asg="${s.id}"><option value="">Assign carrier...</option>${LO.map(u=>`<option value="${u.id}" ${u.id==s.carrier_id?"selected":""}>${esc(u.name)}</option>`).join("")}</select>`:""}<div class="two"><button class="chip sm on" data-sa="adv" data-sid="${s.id}" data-st="${s.status}">Advance: ${SN[Math.min(5,s.status+1)]}</button><button class="chip sm" data-sa="dly" data-sid="${s.id}" data-dl="${s.delayed}">${s.delayed?"Clear delay":"Flag delay"}</button></div></div>`).join("");
+async function ord(){if(!me)return;try{if(me.role=="logistics"){$("ol").innerHTML=shipCards(await api("/shipments"),false)||'<p class="mut">No shipments assigned to you yet.</p>';return}
+orders=await api("/orders");$("ol").innerHTML=orders.map(o=>{const r=me.role,b=(s,t)=>`<button class="chip sm on" data-os="${s}" data-oid="${o.id}">${t}</button>`;let a="";
+if(r=="seller"&&o.status=="escrow")a=b("preparing","Start preparing");if(r=="seller"&&o.status=="preparing")a=b("in_transit","Mark in transit");
+if(r=="buyer"&&o.status=="in_transit")a=b("delivered","Confirm delivery");if(r=="buyer"&&o.status=="escrow")a=b("cancelled","Cancel order");
+return `<div class="card"><div class="row"><b>${esc(o.title)}</b><span class="badge">${OS[o.status]}</span></div><div class="mut">${o.qty.toLocaleString()} units · ${money(+o.total)} · to ${esc(o.dest_country)}</div><div class="mut">${esc(o.tracking_ref||o.ref)}</div><div class="bar"><i style="width:${OP[o.status]}%"></i></div>${a}</div>`}).join("")||'<p class="mut">No orders yet.</p>'}catch(e){$("ol").innerHTML=`<p class="mut">${esc(e.message)}</p>`}}
+async function adm(){const tb=[["ov","Overview"],["bu","Buyers"],["se","Sellers"],["lo","Logistics"]];let h=`<div class="chips">${tb.map(t=>`<button class="chip ${t[0]==at?"on":""}" data-at="${t[0]}">${t[1]}</button>`).join("")}</div>`;
+try{if(at=="ov"){const s=await api("/admin/stats");h+=`<div class="kp">${[["Buyers",s.buyers],["Sellers",s.sellers],["Logistics partners",s.logistics],["Orders",s.orders],["Order value",money(s.gmv)],["Open orders value",money(s.escrow_held)],["Live shipments",s.live_shipments],["Delayed",s.delayed_shipments],["Sellers to verify",s.pending_sellers]].map(k=>`<div class="card"><div class="mut">${k[0]}</div><div class="price">${k[1]}</div></div>`).join("")}</div>`}
+else{const role={bu:"buyer",se:"seller",lo:"logistics"}[at],U=await api("/admin/users?role="+role);if(role=="logistics")LO=U;
+h+=U.map(u=>`<div class="card"><div class="row"><b>${esc(u.name)}</b><span class="badge" style="${u.status=="active"?"":"color:var(--warn);border-color:var(--warn)"}">${u.status}</span></div><div class="mut">${esc(u.email)} · ${esc(u.country||"")}${role!="buyer"?" · "+(u.verified?"✓ Verified":"⏳ Not verified"):""}</div><div class="two">${role!="buyer"?`<button class="chip sm on" data-a="ver" data-id="${u.id}" data-v="${u.verified}">${u.verified?"Revoke verification":"Verify"}</button>`:""}<button class="chip sm" data-a="sus" data-id="${u.id}" data-v="${u.status}">${u.status=="active"?"Suspend":"Reactivate"}</button></div></div>`).join("")||'<p class="mut">None yet.</p>';
+if(role=="logistics")h+="<b>Shipments</b>"+(shipCards(await api("/shipments"),true)||'<p class="mut">No shipments yet.</p>')}}catch(e){h+=`<p class="mut">${esc(e.message)}</p>`}$("ad").innerHTML=h}
+function assist(){const n=($("sn").value+" "+$("sd").value).toLowerCase(),p=+$("sp").value,m=+$("sm2").value,k=KB.find(a=>n.includes(a[0])),pool=P.filter(x=>k&&x.cat==k[1]),avg=pool.length?pool.reduce((a,x)=>a+x.t[0][1],0)/pool.length:0;
+let sc=Math.min(30,imgs.length*10)+($("sn").value.length>12?15:5)+($("sd").value.length>30?20:0)+(p>0?15:0)+(m>0?10:0)+(k?10:0);const tips=[imgs.length<3&&"add 3+ photos",$("sd").value.length<=30&&"describe grade and packaging",!k&&"use a clearer product name"].filter(Boolean);
+$("aib").innerHTML=`<b>✨ Smart Assist</b><br>Category: <b>${k?k[1]:"not detected yet"}</b> · HS code: <b>${k?k[2]:"-"}</b><br>${avg?`Similar listings start around ${money(avg*.8)} to ${money(avg*1.2)}.`:"Price guidance appears when similar listings exist."}<br>Listing score: <b>${Math.min(100,sc)}/100</b>${tips.length?"<br>Tip: "+tips.join("; "):""}`}
+async function shrink(f){try{const b=await createImageBitmap(f),s=Math.min(1,1280/Math.max(b.width,b.height)),c=document.createElement("canvas");c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext("2d").drawImage(b,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.82))}catch{return f}}
+async function publish(){const b=$("sub"),n=$("sn").value.trim();if(!n)return toast("Enter a product name");if(me.role!="seller"&&me.role!="admin")return toast("Only sellers can post goods. Sign up as a seller.");
+b.disabled=true;b.textContent="Publishing...";try{const urls=[];for(const im of imgs){const ct=im.b.type,s=await api("/uploads/sign",{method:"POST",body:{contentType:ct}});
+const r=await fetch(s.uploadUrl,{method:"PUT",headers:{"Content-Type":ct},body:im.b});if(!r.ok)throw new Error("Photo upload failed. Check the R2 CORS rule.");urls.push(s.publicUrl)}
+const k=KB.find(a=>n.toLowerCase().includes(a[0]));await api("/listings",{method:"POST",body:{title:n,description:$("sd").value.trim()||undefined,category:k?k[1]:"Industrial",hsCode:k?k[2]:undefined,originCountry:$("so").value,moq:+$("sm2").value,price:+$("sp").value,photos:urls}});
+toast(me.verified?"Listing published":"Submitted. It goes live after an admin verifies your account.");imgs=[];$("pv").innerHTML="";$("sn").value="";$("sd").value="";assist();await load();go("market")}
+catch(e){toast(e.message)}finally{b.disabled=false;b.textContent="Publish listing"}}
+document.addEventListener("click",async e=>{const t=e.target.closest("[data-t]");if(t)return go(t.dataset.t);const d=e.target.dataset,id=e.target.id;
+try{if(d.mode){mode=d.mode;authUI()}else if(id=="ago")await doAuth();else if(id=="lo2")logout();else if(id=="mb"){$("dr").classList.add("open");$("ov").classList.add("open")}
+else if(id=="ov"){$("dr").classList.remove("open");$("ov").classList.remove("open")}else if(d.c){cat=d.c;draw()}
+else if(d.o){if(me.role!="buyer")return toast("Log in as a buyer to place orders.");const p=P.find(x=>x.id==d.o);e.target.disabled=true;await api("/orders",{method:"POST",body:{listingId:p.id,qty:p.moq,destCountry:$("dest").value}});e.target.textContent="Placed ✓";toast("Order placed. Track it in Orders.")}
+else if(d.f){const r=await api("/favorites/"+d.f,{method:"PUT"});r.favorite?fav.add(d.f):fav.delete(d.f);draw()}
+else if(d.m)await chat(d.m);
+else if(d.s){const v=$("mi"+d.s).value.trim();if(!v)return;if(me.role!="buyer")return toast("Only buyers can message sellers.");await api("/messages",{method:"POST",body:{listingId:d.s,body:v}});toast("Message sent");$("ch"+d.s).innerHTML="";await chat(d.s)}
+else if(d.os){await api(`/orders/${d.oid}/status`,{method:"PATCH",body:{status:d.os}});await ord()}
+else if(d.sa){await api("/shipments/"+d.sid,{method:"PATCH",body:d.sa=="adv"?{status:Math.min(5,+d.st+1)}:{delayed:d.dl!=="true"}});me.role=="admin"?await adm():await ord()}
+else if(d.at){at=d.at;await adm()}
+else if(d.a){await api("/admin/users/"+d.id,{method:"PATCH",body:d.a=="sus"?{status:d.v=="active"?"suspended":"active"}:{verified:d.v!=="true"}});await adm()}
+else if(id=="tg")await track();else if(id=="pb")$("ph").click();else if(id=="sub")await publish();
+else if(id=="rs"){if(me.role!="buyer")return toast("Log in as a buyer to send a request.");const p=$("rp").value.trim();if(!p)return toast("Describe the product you need");
+await api("/rfqs",{method:"POST",body:{product:p,qty:+$("rq").value,destCountry:$("rd").value,budgetUsd:+$("rb").value||undefined}});$("rres").innerHTML='<div class="card"><b>Request sent ✓</b><p class="mut">Sellers can now see your request.</p></div>'}
+}catch(er){toast(er.message);if(e.target.disabled)e.target.disabled=false}});
+document.addEventListener("change",async e=>{if(e.target.dataset.asg){try{await api("/shipments/"+e.target.dataset.asg,{method:"PATCH",body:{carrierId:e.target.value||null}});toast("Carrier updated");await adm()}catch(er){toast(er.message)}}});
+$("ph").onchange=async e=>{imgs=[];for(const f of[...e.target.files].slice(0,4)){const b=await shrink(f);imgs.push({b,u:URL.createObjectURL(b)})}$("pv").innerHTML=imgs.map(i=>`<img src="${i.u}" alt="">`).join("");assist()};
+["sn","sd","sp","sm2"].forEach(i=>$(i).oninput=assist);["sf","st","sw","sm"].forEach(i=>$(i).oninput=ship);$("q").oninput=draw;$("dest").onchange=draw;
+$("cur").onchange=e=>{cur=e.target.value;draw();ship();if(me&&!$("orders").classList.contains("hide"))ord()};
+(async()=>{authUI();draw();ship();assist();if(tok){try{await enter(await api("/me"))}catch{tok=null;try{localStorage.removeItem("tb_t")}catch{}}}})();
 </script></body></html>
