@@ -1,55 +1,71 @@
-<p align="center"><img src="assets/logo.svg" width="96" alt="TradeBridge logo"></p>
+# TradeBridge API
 
-# TradeBridge
+Node.js (Express) backend for TradeBridge: login and roles, listings with photo upload, orders, shipments, RFQs, chat and an admin console.
+Stack: **Render** (this API) + **Neon** (Postgres) + **Cloudflare R2** (photos).
 
-A mobile-first B2B trade and logistics platform prototype (marketplace + shipping + admin), built with plain HTML, CSS and JavaScript. No build step.
+```
+Phone app -> Render API -> Neon (data)
+                        -> R2   (photos)
+```
 
-## Features
-- Marketplace with tiered bulk pricing, MOQ, verified sellers, escrow-style orders, landed cost to your country
-- Sell tab: photo upload (up to 4) and Smart Assist (category, HS code, price range, listing score)
-- RFQ (request for quotation), supplier chat, favourites
-- Shipping quote calculator and shipment tracking
-- Multi-currency (USD, NGN, EUR, GBP, CNY, AED, KES)
-- Login / sign up for Buyer, Seller and Logistics partner roles
-- Side menu and Admin console (monitor buyers, sellers, logistics partners and shipments)
-- Deep orange and sky blue theme with light and dark mode
+## Deploy
+1. **Neon:** create a project and copy the connection string (`postgresql://...`).
+2. **Cloudflare R2:** create a bucket, an API token (Object Read & Write), a CORS rule allowing `PUT` from your site, and a public custom domain for the bucket.
+3. **GitHub:** push this folder to a repo (keep `.env` out of git).
+4. **Render:** New > Web Service (or Blueprint using `render.yaml`) from that repo.
+5. In Render **Environment**, set the variables below. `JWT_SECRET` is generated for you by `render.yaml`.
+6. Deploy. On start it creates the tables and, if `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set, your first admin.
+7. **Delete `ADMIN_PASSWORD` from Render after the first successful start.**
+8. Check `https://YOUR-SERVICE.onrender.com/health` returns `{"ok":true}`.
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon connection string |
+| `JWT_SECRET` | 32+ random characters (auto-generated on Render) |
+| `ALLOWED_ORIGIN` | Your site, e.g. `https://mcbosun.github.io` (comma-separate several) |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | From Cloudflare |
+| `R2_ENDPOINT` | Optional. Only for EU or FedRAMP jurisdiction buckets, e.g. `https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com` |
+| `R2_PUBLIC_URL` | Public bucket address, e.g. `https://photos.yourdomain.com` |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | First admin only (password 12+ characters) |
 
 ## Run locally
-Open `index.html` in a browser, or serve the folder:
-
 ```bash
-python3 -m http.server 8000
+cp .env.example .env     # fill in values
+npm install
+node --env-file=.env scripts/migrate.js
+node --env-file=.env server.js
 ```
 
-## Deploy on GitHub Pages
-1. Create a new GitHub repository and push these files to the `main` branch.
-2. In the repo go to **Settings → Pages**, set **Source** to **GitHub Actions**.
-3. Push to `main` (or run the workflow under **Actions**). Your site appears at `https://<username>.github.io/<repo>/`.
+## Endpoints
+Send `Authorization: Bearer <token>` where login is needed.
 
-## Demo logins
-| Role | Email | Password |
+| Method and path | Who | What |
 |---|---|---|
-| Admin | admin@tradebridge.com | admin123 |
-| Buyer | buyer@demo.com | demo123 |
-| Seller | sun@demo.com | demo123 |
-| Logistics | swift@demo.com | demo123 |
+| `POST /auth/signup` | public | name, email, password (8+), role: buyer, seller or logistics, country |
+| `POST /auth/login` | public | returns token and user |
+| `GET /me` | any | current user |
+| `GET /listings`, `GET /listings/:id` | public | browse (`category`, `q`, `limit`, `offset`) |
+| `POST /uploads/sign` | seller | `{contentType}` returns a 5-minute R2 upload link and the public photo URL |
+| `POST /listings` | seller | title, category, originCountry, moq, price, optional tiers, photos |
+| `GET /listings/mine`, `DELETE /listings/:id` | seller | manage own listings |
+| `GET/PUT /favorites` | any | list or toggle saved listings |
+| `POST /orders`, `GET /orders` | buyer / all | place order (creates a shipment) / list by role |
+| `PATCH /orders/:id/status` | buyer, seller, admin | seller: preparing, in_transit; buyer: delivered, cancelled |
+| `GET /track/:ref` | public | shipment tracking |
+| `GET /shipments`, `PATCH /shipments/:id` | logistics, admin | update status 0 to 5, delay, ETA; admin assigns `carrierId` |
+| `POST/GET /rfqs` | buyer / seller, admin | requests for quotation |
+| `POST/GET /messages` | buyer, seller | chat about a listing |
+| `GET /admin/stats`, `GET /admin/users`, `PATCH /admin/users/:id` | admin | monitor, suspend, verify (verifying a seller activates their pending listings) |
 
-## Important
-This is a front-end prototype. Accounts, listings, photos, orders and shipments live in browser memory and reset on reload. Rates and shipping costs are demo estimates. Do not use these credentials or this auth in production.
+Photo upload flow: call `/uploads/sign`, `PUT` the file to `uploadUrl` with the returned `Content-Type` header, then send `publicUrl` in `photos` when creating the listing. Resize images in the app before upload.
 
-## Next steps to make it real
-- Backend and database (Postgres, e.g. Supabase) with real authentication and role-based access
-- Image storage for product photos
-- Payment and escrow provider, carrier APIs, live FX rates, customs and duty data
-- Server-side admin permissions and audit logs
+## Security notes
+- Passwords are hashed with bcrypt. Logins use signed tokens that expire after 7 days.
+- Rate limits on all routes, stricter on login and signup. Inputs are validated and queries are parameterised.
+- Keep secrets only in Render environment settings, never in GitHub or the front end. Regenerate any key that leaks.
+- Presigned upload links do not enforce a file size limit. Add Cloudflare limits or server-side checks before launch.
 
-## Structure
-```
-index.html
-assets/styles.css
-assets/app.js
-assets/logo.svg       (full-colour logo, favicon)
-assets/logo-mark.svg  (white mark for coloured headers)
-.github/workflows/pages.yml
-.nojekyll  LICENSE  .gitignore  README.md
-```
+## Not built yet
+- **Real escrow and payments:** `escrow` is only an order status. Connect Paystack, Flutterwave or Stripe before moving money.
+- Carrier APIs for live rates and tracking, email and SMS alerts, password reset, seller document verification, dispute handling, reviews, live (WebSocket) chat.
+- Render's free tier sleeps when idle, so the first request after a quiet period is slow.
