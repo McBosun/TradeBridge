@@ -96,13 +96,13 @@ nav button{font-size:11px}
 <div class="ai" id="aib"></div>
 <button class="p" id="sub">Publish listing</button></div></section>
 <section id="rfq" class="hide">
-<div class="card"><b>Request for quotation</b><p class="mut">Post what you need. Verified suppliers worldwide bid within 24 hours.</p>
+<div class="card" id="rform"><b>Request for quotation</b><p class="mut">Post what you need. Verified suppliers worldwide bid within 24 hours.</p>
 <label>Product</label><input id="rp" placeholder="e.g. 500 solar inverters 5kW">
 <label>Quantity</label><input id="rq" type="number" min="1" value="500">
 <label>Deliver to</label><select id="rd"></select>
 <label>Target budget (USD)</label><input id="rb" type="number" min="1" value="20000">
 <button class="p" id="rs">Send to suppliers</button></div>
-<div id="rres"></div>
+<div id="rres"></div><div id="rl"></div>
 </section>
 <section id="ship" class="hide">
 <div class="card"><b>Shipping quote</b>
@@ -115,6 +115,7 @@ nav button{font-size:11px}
 <div class="row" style="margin-top:8px"><input id="tn" placeholder="Enter tracking number"><button class="chip on" id="tg">Track</button></div>
 <div id="tr" style="margin-top:12px"></div></div>
 </section>
+<section id="msgs" class="hide"><div id="mg"></div></section>
 <section id="admin" class="hide"><div id="ad"></div></section>
 <section id="orders" class="hide"><div id="ol"></div></section>
 </main>
@@ -147,8 +148,8 @@ function authUI(){const i=mode=="in";$("au").innerHTML=`<div class="in"><div cla
 ${i?"":`<label>Business name</label><input id="an" autocomplete="organization">`}<label>Email</label><input id="ae" type="email" autocomplete="email"><label>Password</label><input id="ap" type="password" autocomplete="${i?"current-password":"new-password"}" placeholder="${i?"":"At least 8 characters"}">
 ${i?"":`<label>I am a</label><select id="ar"><option value="buyer">Buyer</option><option value="seller">Seller</option><option value="logistics">Logistics partner</option></select><label>Country</label><select id="ac">${co}</select><p class="mut">Sellers and logistics partners are reviewed by an admin before they are verified.</p>`}
 <button class="p" id="ago">${i?"Log in":"Create account"}</button><div class="err" id="am"></div></div></div>`}
-function menu(){$("dr").innerHTML=`<div class="dh"><b>${esc(me.name)}</b><div style="opacity:.9;font-size:13px">${me.role} · ${esc(me.country||"")}</div></div>`+[["market","🛒 Marketplace"],["sell","📸 Sell goods"],["rfq","📝 Request quote"],["ship","🚚 Shipping and tracking"],["orders","📦 "+(me.role=="logistics"?"My shipments":"My orders")]].concat(me.role=="admin"?[["admin","🛡️ Admin console"]]:[]).map(x=>`<button data-t="${x[0]}">${x[1]}</button>`).join("")+`<button id="lo2">↩ Log out</button>`}
-function go(n){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t==n));["market","sell","rfq","ship","orders","admin"].forEach(x=>$(x).classList.toggle("hide",x!=n));$("dr").classList.remove("open");$("ov").classList.remove("open");if(n=="orders")ord();if(n=="admin")adm();scrollTo(0,0)}
+function menu(){$("dr").innerHTML=`<div class="dh"><b>${esc(me.name)}</b><div style="opacity:.9;font-size:13px">${me.role} · ${esc(me.country||"")}</div></div>`+[["market","🛒 Marketplace"],["sell","📸 Sell goods"],["rfq","📝 "+(me.role=="buyer"?"Request quote":"Quote requests")],["msgs","💬 Messages"],["ship","🚚 Shipping and tracking"],["orders","📦 "+(me.role=="logistics"?"My shipments":"My orders")]].concat(me.role=="admin"?[["admin","🛡️ Admin console"]]:[]).map(x=>`<button data-t="${x[0]}">${x[1]}</button>`).join("")+`<button id="lo2">↩ Log out</button>`}
+function go(n){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t==n));["market","sell","rfq","msgs","ship","orders","admin"].forEach(x=>$(x).classList.toggle("hide",x!=n));$("dr").classList.remove("open");$("ov").classList.remove("open");if(n=="orders")ord();if(n=="admin")adm();if(n=="rfq")rfqs();if(n=="msgs")inbox();scrollTo(0,0)}
 async function enter(u){me=u;$("au").classList.add("hide");menu();await load();go(u.role=="admin"?"admin":"market")}
 async function doAuth(){const b=$("ago"),em=$("ae").value.trim(),pw=$("ap").value;b.disabled=true;$("am").style.color="var(--mut)";$("am").textContent="Connecting... the first request can take up to a minute.";
 try{const body=mode=="in"?{email:em,password:pw}:{name:$("an").value.trim(),email:em,password:pw,role:$("ar").value,country:$("ac").value};
@@ -186,6 +187,9 @@ const r=await fetch(s.uploadUrl,{method:"PUT",headers:{"Content-Type":ct},body:i
 const k=KB.find(a=>n.toLowerCase().includes(a[0]));await api("/listings",{method:"POST",body:{title:n,description:$("sd").value.trim()||undefined,category:k?k[1]:"Industrial",hsCode:k?k[2]:undefined,originCountry:$("so").value,moq:+$("sm2").value,price:+$("sp").value,photos:urls}});
 toast(me.verified?"Listing published":"Submitted. It goes live after an admin verifies your account.");imgs=[];$("pv").innerHTML="";$("sn").value="";$("sd").value="";assist();await load();go("market")}
 catch(e){toast(e.message)}finally{b.disabled=false;b.textContent="Publish listing"}}
+async function rfqs(){$("rform").classList.toggle("hide",me.role!="buyer");try{const L=await api("/rfqs");$("rl").innerHTML=(me.role=="buyer"?"<b>My requests</b>":"<b>Open requests</b>")+(L.map(r=>`<div class="card"><div class="row"><b>${esc(r.product)}</b><span class="badge">${r.quote_count} quote${r.quote_count==1?"":"s"}</span></div><div class="mut">${r.qty.toLocaleString()} units · to ${esc(r.dest_country)}${r.budget_usd?" · budget "+money(+r.budget_usd):""}${me.role!="buyer"?" · "+esc(r.buyer_name):""}</div>${me.role=="buyer"?`<button class="chip sm on" data-rq="${r.id}">View quotes</button><div id="qs${r.id}"></div>`:me.role=="seller"?`<input id="qp${r.id}" type="number" min="0" step="0.01" placeholder="Your total price (USD)" style="margin-top:8px"><input id="qn${r.id}" placeholder="Note: delivery time, terms" style="margin-top:6px"><button class="p sm" data-qs="${r.id}">Send quote</button>`:""}</div>`).join("")||'<p class="mut">Nothing here yet.</p>')}catch(e){$("rl").innerHTML=`<p class="mut">${esc(e.message)}</p>`}}
+async function inbox(){try{const L=await api("/inbox");$("mg").innerHTML=L.map(c=>`<div class="card"><b>${esc(c.title)}</b><div class="mut">${esc(c.other_name)}: ${c.mine?"You: ":""}${esc(c.body.slice(0,80))}</div><button class="chip sm on" data-th="${c.listing_id}|${c.other_id}">Open chat</button><div id="th${c.listing_id}${c.other_id}"></div></div>`).join("")||'<p class="mut">No messages yet. Buyers message sellers from the marketplace.</p>'}catch(e){$("mg").innerHTML=`<p class="mut">${esc(e.message)}</p>`}}
+async function thread(l,o){const b=$("th"+l+o);if(b.innerHTML){b.innerHTML="";return}const m=await api(`/messages?listingId=${l}&withUserId=${o}`);b.innerHTML=m.map(x=>`<div class="msg">${x.sender_id==me.id?"You":"Them"}: ${esc(x.body)}</div>`).join("")+`<input id="tr${l}${o}" placeholder="Write a reply" style="margin-top:6px"><button class="p sm" data-tr="${l}|${o}">Send</button>`}
 document.addEventListener("click",async e=>{const t=e.target.closest("[data-t]");if(t)return go(t.dataset.t);const d=e.target.dataset,id=e.target.id;
 try{if(d.mode){mode=d.mode;authUI()}else if(id=="ago")await doAuth();else if(id=="lo2")logout();else if(id=="mb"){$("dr").classList.add("open");$("ov").classList.add("open")}
 else if(id=="ov"){$("dr").classList.remove("open");$("ov").classList.remove("open")}else if(d.c){cat=d.c;draw()}
@@ -197,6 +201,10 @@ else if(d.os){await api(`/orders/${d.oid}/status`,{method:"PATCH",body:{status:d
 else if(d.sa){await api("/shipments/"+d.sid,{method:"PATCH",body:d.sa=="adv"?{status:Math.min(5,+d.st+1)}:{delayed:d.dl!=="true"}});me.role=="admin"?await adm():await ord()}
 else if(d.at){at=d.at;await adm()}
 else if(d.a){await api("/admin/users/"+d.id,{method:"PATCH",body:d.a=="sus"?{status:d.v=="active"?"suspended":"active"}:{verified:d.v!=="true"}});await adm()}
+else if(d.rq){const b=$("qs"+d.rq);if(b.innerHTML){b.innerHTML="";return}const Q=await api(`/rfqs/${d.rq}/quotes`);b.innerHTML=Q.map(x=>`<div class="msg"><b>${esc(x.seller_name)}</b>${x.seller_verified?" ✓":""}: ${money(+x.price_usd)}${x.note?" · "+esc(x.note):""}</div>`).join("")||'<div class="mut">No quotes yet.</div>'}
+else if(d.qs){const p=+$("qp"+d.qs).value;if(!(p>0))return toast("Enter your price");await api(`/rfqs/${d.qs}/quotes`,{method:"POST",body:{priceUsd:p,note:$("qn"+d.qs).value.trim()||undefined}});toast("Quote sent");await rfqs()}
+else if(d.th){const[l,o]=d.th.split("|");await thread(l,o)}
+else if(d.tr){const[l,o]=d.tr.split("|"),v=$("tr"+l+o).value.trim();if(!v)return;await api("/messages",{method:"POST",body:{listingId:l,body:v,toUserId:o}});toast("Sent");$("th"+l+o).innerHTML="";await thread(l,o)}
 else if(id=="tg")await track();else if(id=="pb")$("ph").click();else if(id=="sub")await publish();
 else if(id=="rs"){if(me.role!="buyer")return toast("Log in as a buyer to send a request.");const p=$("rp").value.trim();if(!p)return toast("Describe the product you need");
 await api("/rfqs",{method:"POST",body:{product:p,qty:+$("rq").value,destCountry:$("rd").value,budgetUsd:+$("rb").value||undefined}});$("rres").innerHTML='<div class="card"><b>Request sent ✓</b><p class="mut">Sellers can now see your request.</p></div>'}
